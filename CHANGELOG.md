@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- Comprehensive SEO metadata in `index.html`: optimized title/description for target keywords (Nordic walk, fitness, North Coast), keywords meta tag, robots directive with `max-image-preview:large`, geo tags (GB-NIR, Coleraine coordinates), theme-color
+- Full Open Graph tags: og:image, og:url, og:locale (`en_GB`), og:site_name, og:image:alt
+- Full Twitter Card tags: title, description, image, alt
+- 6 JSON-LD structured data schemas: LocalBusiness/SportsActivityLocation, TouristAttraction, Product/Offer (x4 tours), FAQPage (6 Q&As), WebSite
+- AI crawler management in `robots.txt`: allows search bots (ChatGPT-User, OAI-SearchBot, PerplexityBot, Claude-Web, Applebot, Amazonbot, YouBot, PetalBot), allows training bots (GPTBot, Google-Extended, ClaudeBot), blocks zero-benefit crawlers (CCBot, Bytespider, Diffbot, cohere-ai)
+- `public/llms.txt` — structured Markdown summary for LLMs (tours, locations, benefits, contact info)
+- `public/sitemap.xml` — XML sitemap with canonical URL
+- `public/og-image.jpg` — social sharing preview image (Nordic walking on beach, CC BY 2.0)
 - AI chat widget (`ChatWidget.tsx`, `ChatMessage.tsx`) with streaming responses
 - `useChat` hook for SSE streaming from Supabase Edge Function
 - Supabase Edge Function (`supabase/functions/chat/`) proxying to OpenRouter

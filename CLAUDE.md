@@ -27,6 +27,8 @@ npm run lint       # ESLint
 - **AI Chat**: Floating chat widget (`ChatWidget.tsx`) backed by Supabase Edge Function (`supabase/functions/chat/`) that proxies to OpenRouter with tool-use support
 - **Security**: CORS origin whitelist, IP rate limiting (20 req/min via `cf-connecting-ip`), RLS policies on DB tables, message size validation (2000 char max), API keys as Supabase secrets
 - **AI Provider**: Configurable via env vars (`AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`) — supports OpenRouter, Gemini, OpenAI, Anthropic with zero code changes
+- **SEO**: Comprehensive meta tags (OG, Twitter, geo), 6 JSON-LD schemas, AI-friendly `robots.txt` + `llms.txt`, sitemap
+- **AI Crawlers**: `robots.txt` allows search bots (ChatGPT, Perplexity, Claude, etc.) + training bots; blocks CCBot, Bytespider, Diffbot, cohere-ai
 
 ## Key Conventions
 
@@ -54,6 +56,10 @@ npm run lint       # ESLint
 | `src/hooks/useChat.ts` | Chat hook (SSE streaming from Edge Function) |
 | `src/components/ChatMessage.tsx` | Chat message bubble component |
 | `docs/KNOWLEDGE_BASE_GUIDE.md` | How to edit the knowledge base (bilingual EN/RU) |
+| `public/robots.txt` | Crawler rules: AI search bots, training bots, blocked scrapers |
+| `public/llms.txt` | Structured Markdown summary for LLMs |
+| `public/sitemap.xml` | XML sitemap |
+| `public/og-image.jpg` | Social sharing preview image (1024x680, CC BY 2.0) |
 
 ## Supabase Commands
 

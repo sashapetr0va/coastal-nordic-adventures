@@ -1,3 +1,8 @@
+# ============================================
+# robots.txt — nordicwalk.fit
+# ============================================
+
+# --- Standard Search Crawlers ---
 User-agent: Googlebot
 Allow: /
 
@@ -10,5 +15,74 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
+# --- AI Search Bots (serve real-time user queries — ALLOW for visibility) ---
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+User-agent: YouBot
+Allow: /
+
+User-agent: PetalBot
+Allow: /
+
+User-agent: Meta-ExternalFetcher
+Allow: /
+
+# --- AI Training Bots (allow — we want AI models to know about us) ---
+User-agent: GPTBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Meta-ExternalAgent
+Allow: /
+
+# --- Block: aggressive crawlers with no search benefit ---
+User-agent: CCBot
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: Diffbot
+Disallow: /
+
+User-agent: cohere-ai
+Disallow: /
+
+User-agent: cohere-training
+Disallow: /
+
+User-agent: Omgilibot
+Disallow: /
+
+# --- Default: allow everything else ---
 User-agent: *
 Allow: /
+
+Sitemap: https://nordicwalk.fit/sitemap.xml

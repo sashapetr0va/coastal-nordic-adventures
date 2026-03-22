@@ -63,6 +63,17 @@ docs/
 └── KNOWLEDGE_BASE_GUIDE.md  # How to edit agent knowledge (EN/RU)
 ```
 
+## SEO & Discoverability
+
+- **Meta tags**: Optimized title, description, keywords targeting "Nordic walk", "fitness", "North Coast", "Northern Ireland"
+- **Open Graph + Twitter Cards**: Full social sharing tags with og-image for WhatsApp, Facebook, Telegram, Twitter/X, LinkedIn
+- **Structured data**: 6 JSON-LD schemas — LocalBusiness, TouristAttraction, Product/Offer (4 tours), FAQPage (6 Q&As), WebSite
+- **AI crawler management**: `robots.txt` allows AI search bots (ChatGPT, Perplexity, Claude, etc.) and training bots; blocks zero-benefit scrapers
+- **`llms.txt`**: Structured summary for LLMs at `/llms.txt` — helps AI systems understand the business
+- **Sitemap**: `sitemap.xml` with canonical URL
+- **Geo tags**: GB-NIR region, Coleraine coordinates for local search ranking
+- **Robots directive**: `max-image-preview:large` for Google Discover & AI Overviews
+
 ## Deployment
 
 Deployed to **GitHub Pages** via GitHub Actions with custom domain `nordicwalk.fit`. Every push to `main` triggers a build and deploy (see `.github/workflows/deploy.yml`).
