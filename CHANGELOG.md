@@ -15,7 +15,8 @@ All notable changes to this project will be documented in this file.
 - Provider-agnostic AI backend — switch providers (OpenRouter, Gemini, OpenAI) via env vars (`AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`)
 - IP-based rate limiting on Edge Function (20 requests/minute per IP)
 - CORS origin whitelist — only `nordicwalk.fit` and `localhost` origins allowed
-- Unit tests for ChatMessage, ChatWidget, useChat hook, Supabase client, and Edge Function logic (rate limiter, CORS, tool execution)
+- Unit tests: 64 total covering ChatMessage, ChatWidget, useChat hook, Supabase client, Edge Function logic (rate limiter, CORS, tool execution, buildTools, dynamic DB data, loading states)
+- Knowledge base guide (`docs/KNOWLEDGE_BASE_GUIDE.md`) — bilingual EN/RU instructions for editing via Supabase Dashboard
 - Supabase knowledge base: `tours` table (structured tour data) and `knowledge_base` table (FAQ, policies, contact, guidelines)
 - Edge Function reads knowledge from Supabase DB with 5-minute in-memory cache
 - Database migrations and seed data (`supabase/migrations/`)
@@ -32,6 +33,11 @@ All notable changes to this project will be documented in this file.
 - Removed leaked OpenRouter API key from `.env` (moved to Supabase secrets)
 - Added CORS origin whitelist (replaces `Access-Control-Allow-Origin: *`)
 - Added rate limiting to prevent abuse of the AI chat endpoint
+- Fixed rate limiter to prioritize unspoofable `cf-connecting-ip` over `x-forwarded-for`
+- Added RLS policies: anon role can only SELECT active rows, no write access
+- Added message size validation (2000 char max per message)
+- Removed AI provider error details from client responses (prevent info disclosure)
+- Fixed 10 npm dependency vulnerabilities (7 high → 0 high)
 
 ## [1.0.0] - 2026-03-20
 

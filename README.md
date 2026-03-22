@@ -9,9 +9,9 @@ A responsive landing page for guided Nordic walking tours along the North Coast 
 - **React 18** + **TypeScript** + **Vite**
 - **Tailwind CSS** + **shadcn/ui** (Radix UI)
 - **React Router** (SPA routing)
-- **Supabase** (PostgreSQL backend)
+- **Supabase** (PostgreSQL knowledge base + Edge Functions)
 - **Tanstack Query** (data fetching)
-- **Vitest** + **Playwright** (testing)
+- **Vitest** (64 unit tests)
 - **OpenRouter** (AI chat via Supabase Edge Function with tool-use)
 
 ## Getting Started
@@ -53,9 +53,14 @@ src/
 ├── assets/              # Tour location & instructor images
 └── test/                # Vitest setup & tests
 
-supabase/functions/
-└── chat/
-    └── index.ts         # AI chat Edge Function (OpenRouter + tool-use)
+supabase/
+├── functions/chat/
+│   └── index.ts         # AI chat Edge Function (OpenRouter + tool-use)
+├── migrations/          # DB schema, seed data, RLS policies
+└── config.toml
+
+docs/
+└── KNOWLEDGE_BASE_GUIDE.md  # How to edit agent knowledge (EN/RU)
 ```
 
 ## Deployment
@@ -70,18 +75,25 @@ The site includes a floating chat widget powered by [OpenRouter](https://openrou
 
 ```
 Browser (ChatWidget) → Supabase Edge Function → OpenRouter → AI Model
+                              ↕
+                     Supabase PostgreSQL
+                   (tours + knowledge_base)
 ```
 
 - **Frontend**: `ChatWidget.tsx` + `useChat.ts` hook with SSE streaming
 - **Backend**: Supabase Edge Function (`supabase/functions/chat/index.ts`) acts as a secure proxy
+- **Knowledge Base**: All business knowledge stored in Supabase DB (`tours` + `knowledge_base` tables), editable via the [Supabase Dashboard](https://supabase.com/dashboard) — see `docs/KNOWLEDGE_BASE_GUIDE.md`
 - **Provider**: Configurable via Supabase secrets (`AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`) — swap providers without code changes
 
 ### Security
 
 - API keys stored as Supabase secrets (never exposed to the browser)
 - CORS origin whitelist: only `nordicwalk.fit` and `localhost` allowed
-- IP-based rate limiting: 20 requests/minute per IP
+- IP-based rate limiting: 20 requests/minute per IP (via Cloudflare `cf-connecting-ip`)
+- Message size validation: 2000 character max per message
 - Response size capped at 500 tokens per message
+- RLS policies: anon role can only read active rows, no write access
+- AI provider error details not exposed to clients
 
 ### Edge Function Deployment
 

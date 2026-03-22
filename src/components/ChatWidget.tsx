@@ -25,6 +25,21 @@ const ChatWidget = () => {
     }
   }, [isOpen]);
 
+  // Lock body scroll when chat is open on mobile
+  useEffect(() => {
+    const isMobile = () => window.innerWidth < 640;
+
+    if (isOpen && isMobile()) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   const handleSend = () => {
     const text = input.trim();
     if (!text || isLoading) return;
@@ -43,7 +58,7 @@ const ChatWidget = () => {
     <>
       {/* Chat Panel */}
       {isOpen && (
-        <div className="fixed bottom-20 right-4 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-[380px] max-h-[70vh] sm:max-h-[500px] flex flex-col rounded-2xl shadow-2xl border border-border bg-card animate-fade-up">
+        <div className="fixed bottom-20 right-4 left-4 sm:left-auto sm:right-6 z-50 sm:w-[380px] max-h-[70vh] sm:max-h-[500px] flex flex-col rounded-2xl shadow-2xl border border-border bg-card animate-fade-up">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-ocean text-white rounded-t-2xl shrink-0">
             <span className="font-medium text-sm">Ask about our tours</span>

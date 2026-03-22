@@ -21,10 +21,11 @@ npm run lint       # ESLint
 - **Components**: shadcn/ui (Radix UI) in `src/components/ui/`
 - **Animations**: Custom `useScrollReveal` hook (IntersectionObserver) with Tailwind animation classes (`animate-fade-up`, `animate-slide-left`, `animate-slide-right`)
 - **Booking**: Client-side mailto: form (no backend persistence yet)
-- **Backend**: Supabase Edge Functions for serverless AI proxy; Supabase client configured in `src/integrations/supabase/` (database tables not yet populated)
+- **Backend**: Supabase Edge Functions for serverless AI proxy; PostgreSQL for knowledge base (`tours` + `knowledge_base` tables)
+- **Knowledge Base**: All business knowledge (tours, FAQ, policies, contact info) stored in Supabase DB — editable via Dashboard, cached 5 min in Edge Function
 - **Deployment**: GitHub Pages via Actions (`.github/workflows/deploy.yml`), custom domain `nordicwalk.fit`, auto-deploys on push to `main`
 - **AI Chat**: Floating chat widget (`ChatWidget.tsx`) backed by Supabase Edge Function (`supabase/functions/chat/`) that proxies to OpenRouter with tool-use support
-- **Security**: CORS origin whitelist (`nordicwalk.fit`, `localhost`), IP-based rate limiting (20 req/min), API keys stored as Supabase secrets
+- **Security**: CORS origin whitelist, IP rate limiting (20 req/min via `cf-connecting-ip`), RLS policies on DB tables, message size validation (2000 char max), API keys as Supabase secrets
 - **AI Provider**: Configurable via env vars (`AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`) — supports OpenRouter, Gemini, OpenAI, Anthropic with zero code changes
 
 ## Key Conventions
@@ -48,17 +49,30 @@ npm run lint       # ESLint
 | `index.html` | HTML entry with SEO meta tags + schema.org JSON-LD |
 | `.github/workflows/deploy.yml` | GitHub Pages CI/CD |
 | `supabase/functions/chat/index.ts` | AI chat Edge Function (OpenRouter + tool-use + rate limiting + CORS) |
+| `supabase/migrations/` | Database schema, seed data, and RLS policies |
 | `src/components/ChatWidget.tsx` | Floating chat UI |
 | `src/hooks/useChat.ts` | Chat hook (SSE streaming from Edge Function) |
 | `src/components/ChatMessage.tsx` | Chat message bubble component |
+| `docs/KNOWLEDGE_BASE_GUIDE.md` | How to edit the knowledge base (bilingual EN/RU) |
 
-## Edge Function Deployment
+## Supabase Commands
 
 ```bash
-npx supabase login --token <token>   # Authenticate (one-time)
-npx supabase functions deploy chat --project-ref ywdqxkypzrlfqdghjdrq  # Deploy
+npx supabase login --token <token>                                      # Authenticate (one-time)
+npx supabase functions deploy chat --project-ref ywdqxkypzrlfqdghjdrq   # Deploy Edge Function
 npx supabase secrets set AI_BASE_URL=... AI_API_KEY=... AI_MODEL=... --project-ref ywdqxkypzrlfqdghjdrq  # Set provider
+npx supabase db push --linked                                           # Apply DB migrations
+npx supabase gen types typescript --project-id ywdqxkypzrlfqdghjdrq > src/integrations/supabase/types.ts  # Regen types
 ```
+
+## Database Tables
+
+| Table | Purpose | Editable via |
+|-------|---------|-------------|
+| `tours` | Tour offerings (name, duration, price, locations) | Supabase Dashboard |
+| `knowledge_base` | FAQ, policies, contact, about, guidelines | Supabase Dashboard |
+
+See `docs/KNOWLEDGE_BASE_GUIDE.md` for editing instructions.
 
 ## AI Provider Config (Supabase Secrets)
 
