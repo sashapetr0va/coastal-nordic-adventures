@@ -7,15 +7,18 @@ import ChatWidget from "./ChatWidget";
 const mockSendMessage = vi.fn();
 const mockClearChat = vi.fn();
 
+let mockIsLoading = false;
+let mockMessages = [
+  {
+    role: "assistant" as const,
+    content: "Hi! I'm here to help with questions about our Nordic walking tours. What would you like to know?",
+  },
+];
+
 vi.mock("@/hooks/useChat", () => ({
   useChat: () => ({
-    messages: [
-      {
-        role: "assistant",
-        content: "Hi! I'm here to help with questions about our Nordic walking tours. What would you like to know?",
-      },
-    ],
-    isLoading: false,
+    get messages() { return mockMessages; },
+    get isLoading() { return mockIsLoading; },
     sendMessage: mockSendMessage,
     clearChat: mockClearChat,
   }),
@@ -24,6 +27,13 @@ vi.mock("@/hooks/useChat", () => ({
 describe("ChatWidget", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockIsLoading = false;
+    mockMessages = [
+      {
+        role: "assistant",
+        content: "Hi! I'm here to help with questions about our Nordic walking tours. What would you like to know?",
+      },
+    ];
   });
 
   it("renders the floating trigger button", () => {
@@ -137,5 +147,62 @@ describe("ChatWidget", () => {
     await user.click(clearButton);
 
     expect(mockClearChat).toHaveBeenCalled();
+  });
+
+  it("disables input and send button while loading", async () => {
+    mockIsLoading = true;
+    const user = userEvent.setup();
+    render(<ChatWidget />);
+
+    await user.click(screen.getByRole("button", { name: "Open chat" }));
+
+    const input = screen.getByPlaceholderText("Type a message...");
+    expect(input).toBeDisabled();
+  });
+
+  it("shows loading dots when assistant response is streaming", async () => {
+    mockIsLoading = true;
+    mockMessages = [
+      { role: "assistant", content: "Welcome!" },
+      { role: "user", content: "Hello" },
+      { role: "assistant", content: "" },
+    ];
+
+    const user = userEvent.setup();
+    render(<ChatWidget />);
+
+    await user.click(screen.getByRole("button", { name: "Open chat" }));
+
+    const dots = screen.getAllByText(".");
+    expect(dots.length).toBe(3);
+  });
+
+  it("renders multiple messages in conversation", async () => {
+    mockMessages = [
+      { role: "assistant", content: "Welcome!" },
+      { role: "user", content: "What tours?" },
+      { role: "assistant", content: "We have 4 tours." },
+    ];
+
+    const user = userEvent.setup();
+    render(<ChatWidget />);
+
+    await user.click(screen.getByRole("button", { name: "Open chat" }));
+
+    expect(screen.getByText("Welcome!")).toBeInTheDocument();
+    expect(screen.getByText("What tours?")).toBeInTheDocument();
+    expect(screen.getByText("We have 4 tours.")).toBeInTheDocument();
+  });
+
+  it("does not send when Shift+Enter is pressed", async () => {
+    const user = userEvent.setup();
+    render(<ChatWidget />);
+
+    await user.click(screen.getByRole("button", { name: "Open chat" }));
+
+    const input = screen.getByPlaceholderText("Type a message...");
+    await user.type(input, "Hello{shift>}{enter}{/shift}");
+
+    expect(mockSendMessage).not.toHaveBeenCalled();
   });
 });

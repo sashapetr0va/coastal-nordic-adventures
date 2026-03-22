@@ -247,4 +247,49 @@ describe("useChat", () => {
 
     expect(result.current.messages[2].content).toBe("OK");
   });
+
+  it("handles 429 rate limit error gracefully", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 429,
+    });
+
+    const { result } = renderHook(() => useChat());
+
+    await act(async () => {
+      await result.current.sendMessage("Hello");
+    });
+
+    const lastMsg = result.current.messages[result.current.messages.length - 1];
+    expect(lastMsg.role).toBe("assistant");
+    expect(lastMsg.content).toContain("trouble connecting");
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it("excludes welcome message from API request", async () => {
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        controller.close();
+      },
+    });
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      body: stream,
+    });
+    globalThis.fetch = mockFetch;
+
+    const { result } = renderHook(() => useChat());
+
+    await act(async () => {
+      await result.current.sendMessage("Hello");
+    });
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    // Should NOT include the welcome message in the API payload
+    expect(body.messages).toEqual([{ role: "user", content: "Hello" }]);
+    expect(body.messages.length).toBe(1);
+  });
 });

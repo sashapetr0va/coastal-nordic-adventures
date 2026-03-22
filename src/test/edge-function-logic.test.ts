@@ -49,6 +49,7 @@ function getCorsHeaders(origin: string) {
 }
 
 // --- Re-implement tool execution logic (mirrors chat/index.ts) ---
+// executeTool now takes tourData as a parameter (loaded from DB at runtime)
 const TOUR_DATA: Record<string, object> = {
   coastal: {
     name: "Coastal Walking Tour",
@@ -86,12 +87,12 @@ const TOUR_DATA: Record<string, object> = {
 
 function executeTool(
   name: string,
-  args: Record<string, unknown>
+  args: Record<string, unknown>,
+  tourData: Record<string, object>
 ): string {
   switch (name) {
     case "get_tour_info": {
-      const tourType = args.tour_type as string;
-      const tour = TOUR_DATA[tourType];
+      const tour = tourData[args.tour_type as string];
       if (!tour) return JSON.stringify({ error: "Unknown tour type" });
       return JSON.stringify(tour);
     }
@@ -112,6 +113,34 @@ function executeTool(
     default:
       return JSON.stringify({ error: "Unknown tool" });
   }
+}
+
+// --- Re-implement buildTools (mirrors chat/index.ts) ---
+function buildTools(tourEnum: string[]) {
+  return [
+    {
+      type: "function",
+      function: {
+        name: "get_tour_info",
+        description: "Get details about a specific Nordic walking tour",
+        parameters: {
+          type: "object",
+          properties: {
+            tour_type: { type: "string", enum: tourEnum },
+          },
+          required: ["tour_type"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_current_time",
+        description: "Get the current date and time in Northern Ireland",
+        parameters: { type: "object", properties: {} },
+      },
+    },
+  ];
 }
 
 // --- Tests ---
@@ -220,7 +249,7 @@ describe("CORS Headers", () => {
 describe("Tool Execution: get_tour_info", () => {
   it("returns coastal tour data", () => {
     const result = JSON.parse(
-      executeTool("get_tour_info", { tour_type: "coastal" })
+      executeTool("get_tour_info", { tour_type: "coastal" }, TOUR_DATA)
     );
     expect(result.name).toBe("Coastal Walking Tour");
     expect(result.duration).toBe("1.5–2 hours");
@@ -231,7 +260,7 @@ describe("Tool Execution: get_tour_info", () => {
 
   it("returns beach tour data", () => {
     const result = JSON.parse(
-      executeTool("get_tour_info", { tour_type: "beach" })
+      executeTool("get_tour_info", { tour_type: "beach" }, TOUR_DATA)
     );
     expect(result.name).toBe("Beach Nordic Walking");
     expect(result.maxGroup).toBe(10);
@@ -240,7 +269,7 @@ describe("Tool Execution: get_tour_info", () => {
 
   it("returns beginner tour data", () => {
     const result = JSON.parse(
-      executeTool("get_tour_info", { tour_type: "beginner" })
+      executeTool("get_tour_info", { tour_type: "beginner" }, TOUR_DATA)
     );
     expect(result.name).toBe("Beginner Lesson");
     expect(result.duration).toBe("45 minutes");
@@ -249,7 +278,7 @@ describe("Tool Execution: get_tour_info", () => {
 
   it("returns private tour data", () => {
     const result = JSON.parse(
-      executeTool("get_tour_info", { tour_type: "private" })
+      executeTool("get_tour_info", { tour_type: "private" }, TOUR_DATA)
     );
     expect(result.name).toBe("Private Tour");
     expect(result.duration).toBe("Flexible");
@@ -258,7 +287,7 @@ describe("Tool Execution: get_tour_info", () => {
 
   it("returns error for unknown tour type", () => {
     const result = JSON.parse(
-      executeTool("get_tour_info", { tour_type: "scuba" })
+      executeTool("get_tour_info", { tour_type: "scuba" }, TOUR_DATA)
     );
     expect(result.error).toBe("Unknown tour type");
   });
@@ -266,7 +295,7 @@ describe("Tool Execution: get_tour_info", () => {
 
 describe("Tool Execution: get_current_time", () => {
   it("returns time in Europe/London timezone", () => {
-    const result = JSON.parse(executeTool("get_current_time", {}));
+    const result = JSON.parse(executeTool("get_current_time", {}, TOUR_DATA));
     expect(result.timezone).toBe("Europe/London");
     expect(result.time).toBeDefined();
     expect(typeof result.time).toBe("string");
@@ -277,8 +306,63 @@ describe("Tool Execution: get_current_time", () => {
 
 describe("Tool Execution: unknown tool", () => {
   it("returns error for unknown tool name", () => {
-    const result = JSON.parse(executeTool("hack_the_planet", {}));
+    const result = JSON.parse(executeTool("hack_the_planet", {}, TOUR_DATA));
     expect(result.error).toBe("Unknown tool");
+  });
+});
+
+describe("buildTools", () => {
+  it("generates tool enum from tour IDs", () => {
+    const tools = buildTools(["coastal", "beach", "beginner", "private"]);
+    const tourTool = tools[0];
+    expect(tourTool.function.name).toBe("get_tour_info");
+    expect(tourTool.function.parameters.properties.tour_type.enum).toEqual([
+      "coastal",
+      "beach",
+      "beginner",
+      "private",
+    ]);
+  });
+
+  it("adapts to custom tour IDs (simulating DB-loaded tours)", () => {
+    const tools = buildTools(["sunset-walk", "forest-hike"]);
+    expect(
+      tools[0].function.parameters.properties.tour_type.enum
+    ).toEqual(["sunset-walk", "forest-hike"]);
+  });
+
+  it("always includes get_current_time tool", () => {
+    const tools = buildTools([]);
+    expect(tools).toHaveLength(2);
+    expect(tools[1].function.name).toBe("get_current_time");
+  });
+});
+
+describe("Tool Execution with custom DB data", () => {
+  it("works with dynamically loaded tour data", () => {
+    const customTours: Record<string, object> = {
+      "sunset-walk": {
+        name: "Sunset Walk",
+        duration: "2 hours",
+        maxGroup: 5,
+        locations: ["Dunluce Castle"],
+        description: "Walk into the sunset.",
+        price: "£30",
+      },
+    };
+
+    const result = JSON.parse(
+      executeTool("get_tour_info", { tour_type: "sunset-walk" }, customTours)
+    );
+    expect(result.name).toBe("Sunset Walk");
+    expect(result.price).toBe("£30");
+  });
+
+  it("returns error for tour not in custom data", () => {
+    const result = JSON.parse(
+      executeTool("get_tour_info", { tour_type: "coastal" }, {})
+    );
+    expect(result.error).toBe("Unknown tour type");
   });
 });
 

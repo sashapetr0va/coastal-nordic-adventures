@@ -16,10 +16,16 @@ All notable changes to this project will be documented in this file.
 - IP-based rate limiting on Edge Function (20 requests/minute per IP)
 - CORS origin whitelist — only `nordicwalk.fit` and `localhost` origins allowed
 - Unit tests for ChatMessage, ChatWidget, useChat hook, Supabase client, and Edge Function logic (rate limiter, CORS, tool execution)
+- Supabase knowledge base: `tours` table (structured tour data) and `knowledge_base` table (FAQ, policies, contact, guidelines)
+- Edge Function reads knowledge from Supabase DB with 5-minute in-memory cache
+- Database migrations and seed data (`supabase/migrations/`)
+- Dynamic system prompt and tool definitions built from DB content
 - Supabase agent skill: `supabase-postgres-best-practices`
 - OpenRouter agent skill: `create-agent`
 
 ### Changed
+- Edge Function refactored: hardcoded SYSTEM_PROMPT and TOUR_DATA replaced with DB queries
+- Tool `get_tour_info` enum now dynamically populated from active tours in DB
 - Updated README and CLAUDE.md with architecture diagrams, security docs, and deployment instructions
 
 ### Security

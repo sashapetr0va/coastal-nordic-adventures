@@ -1,31 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "@supabase/supabase-js";
 
-const SYSTEM_PROMPT = `You are a friendly, helpful assistant for Nordic Walking Tours NI — a guided Nordic walking tour company on the North Coast of Northern Ireland.
-
-TOURS OFFERED:
-1. Coastal Walking Tour — 1.5–2 hours, up to 8 people, various routes. Explore stunning cliff paths and beaches with guided instruction, photo stops, and nature discovery. MOST POPULAR.
-2. Beach Nordic Walking — 1 hour, up to 10 people, Portstewart or Benone. Fitness-focused session on the sand.
-3. Beginner Lesson — 45 minutes, up to 6 people, Portrush area. Learn correct technique, posture, and pole usage.
-4. Private Tour — Flexible duration, your group size, your choice of location. Personalised experience for families, friends, or corporate wellness.
-
-CONTACT:
-- WhatsApp: +44 7541 772498
-- Telegram: +44 7541 772498
-- Phone: +44 7541 772498
-- Email: sashe4ka.petrova@gmail.com
-
-BOOKING: Visitors can use the booking form on the website or contact directly via WhatsApp/Telegram/phone/email.
-
-LOCATION: North Coast of Northern Ireland — routes include areas around Portrush, Portstewart, and Benone beach.
-
-GUIDELINES:
-- Be warm, concise, and encouraging
-- If asked about specific prices and you don't have them, suggest contacting directly for a quote
-- Encourage booking via the website form or WhatsApp for fastest response
-- Do not make up information you don't have
-- Keep responses short (2-4 sentences) unless the question requires more detail
-- You have tools available — use them when the user asks about tour details or the current time`;
-
+// --- CORS ---
 const ALLOWED_ORIGINS = [
   "https://nordicwalk.fit",
   "http://localhost:8080",
@@ -43,78 +19,7 @@ function getCorsHeaders(req: Request) {
   };
 }
 
-// OpenAI-compatible tool definitions
-const TOOLS = [
-  {
-    type: "function",
-    function: {
-      name: "get_tour_info",
-      description:
-        "Get details about a specific Nordic walking tour including duration, group size, and location",
-      parameters: {
-        type: "object",
-        properties: {
-          tour_type: {
-            type: "string",
-            enum: ["coastal", "beach", "beginner", "private"],
-            description: "The type of tour to look up",
-          },
-        },
-        required: ["tour_type"],
-      },
-    },
-  },
-  {
-    type: "function",
-    function: {
-      name: "get_current_time",
-      description:
-        "Get the current date and time in Northern Ireland (Europe/London timezone)",
-      parameters: {
-        type: "object",
-        properties: {},
-      },
-    },
-  },
-];
-
-const TOUR_DATA: Record<string, object> = {
-  coastal: {
-    name: "Coastal Walking Tour",
-    duration: "1.5–2 hours",
-    maxGroup: 8,
-    locations: ["Portrush cliffs", "Whiterocks", "Portstewart"],
-    description:
-      "Explore stunning cliff paths and beaches with guided instruction, photo stops, and nature discovery.",
-    note: "Most popular tour",
-  },
-  beach: {
-    name: "Beach Nordic Walking",
-    duration: "1 hour",
-    maxGroup: 10,
-    locations: ["Portstewart Strand", "Benone Beach"],
-    description: "Fitness-focused session on the sand.",
-  },
-  beginner: {
-    name: "Beginner Lesson",
-    duration: "45 minutes",
-    maxGroup: 6,
-    locations: ["Portrush area"],
-    description:
-      "Learn correct technique, posture, and pole usage. No experience needed.",
-  },
-  private: {
-    name: "Private Tour",
-    duration: "Flexible",
-    maxGroup: "Your group size",
-    locations: ["Your choice of location"],
-    description:
-      "Personalised experience for families, friends, or corporate wellness.",
-  },
-};
-
 // --- Rate limiter ---
-// 20 requests per minute per IP. Resets on cold start (sufficient for low-traffic site).
 const RATE_LIMIT = 20;
 const RATE_WINDOW_MS = 60_000;
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -136,7 +41,6 @@ function isRateLimited(ip: string): boolean {
   return false;
 }
 
-// Clean up stale entries every 5 minutes to prevent memory leak
 setInterval(() => {
   const now = Date.now();
   for (const [ip, entry] of rateLimitMap) {
@@ -144,14 +48,103 @@ setInterval(() => {
   }
 }, 5 * 60_000);
 
+// --- Knowledge cache (5-minute TTL) ---
+interface KnowledgeCache {
+  systemPrompt: string;
+  tourData: Record<string, object>;
+  toolEnum: string[];
+  loadedAt: number;
+}
+
+let cache: KnowledgeCache | null = null;
+const CACHE_TTL_MS = 5 * 60_000;
+
+const SECTION_HEADINGS: Record<string, string> = {
+  contact: "CONTACT",
+  booking: "BOOKING",
+  location: "LOCATION",
+  guidelines: "GUIDELINES",
+  faq: "FREQUENTLY ASKED QUESTIONS",
+  policy: "POLICIES",
+  what_to_bring: "WHAT TO BRING",
+  about: "ABOUT THE INSTRUCTOR",
+  pricing: "PRICING",
+};
+
+async function getKnowledge(): Promise<KnowledgeCache> {
+  if (cache && Date.now() - cache.loadedAt < CACHE_TTL_MS) {
+    return cache;
+  }
+
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+
+  const [toursRes, kbRes] = await Promise.all([
+    supabase.from("tours").select("*").eq("is_active", true).order("sort_order"),
+    supabase.from("knowledge_base").select("*").eq("is_active", true).order("sort_order"),
+  ]);
+
+  if (toursRes.error) throw new Error(`Failed to load tours: ${toursRes.error.message}`);
+  if (kbRes.error) throw new Error(`Failed to load knowledge: ${kbRes.error.message}`);
+
+  const tours = toursRes.data;
+  const kb = kbRes.data;
+
+  // Build tour data map
+  const tourData: Record<string, object> = {};
+  const toolEnum: string[] = [];
+  for (const t of tours) {
+    tourData[t.id] = {
+      name: t.name,
+      duration: t.duration,
+      maxGroup: t.max_group,
+      locations: t.locations,
+      description: t.description,
+      ...(t.price ? { price: t.price } : {}),
+      ...(t.note ? { note: t.note } : {}),
+    };
+    toolEnum.push(t.id);
+  }
+
+  // Build tours section of the prompt
+  const tourLines = tours
+    .map(
+      (t, i) =>
+        `${i + 1}. ${t.name} — ${t.duration}, up to ${t.max_group} people${t.locations?.length ? ", " + t.locations.join(", ") : ""}. ${t.description}${t.price ? " Price: " + t.price + "." : ""}${t.note ? " " + t.note.toUpperCase() + "." : ""}`
+    )
+    .join("\n");
+
+  // Group knowledge base rows by category
+  const grouped: Record<string, typeof kb> = {};
+  for (const row of kb) {
+    if (!grouped[row.category]) grouped[row.category] = [];
+    grouped[row.category].push(row);
+  }
+
+  // Assemble the full system prompt
+  let prompt = `You are a friendly, helpful assistant for Nordic Walking Tours NI — a guided Nordic walking tour company on the North Coast of Northern Ireland.\n\nTOURS OFFERED:\n${tourLines}`;
+
+  for (const [category, rows] of Object.entries(grouped)) {
+    const heading = SECTION_HEADINGS[category] || category.toUpperCase();
+    const lines = rows.map((r) => `- ${r.title}: ${r.content}`).join("\n");
+    prompt += `\n\n${heading}:\n${lines}`;
+  }
+
+  cache = { systemPrompt: prompt, tourData, toolEnum, loadedAt: Date.now() };
+  return cache;
+}
+
+// --- Tool execution ---
 function executeTool(
   name: string,
-  args: Record<string, unknown>
+  args: Record<string, unknown>,
+  tourData: Record<string, object>
 ): string {
   switch (name) {
     case "get_tour_info": {
-      const tourType = args.tour_type as string;
-      const tour = TOUR_DATA[tourType];
+      const tour = tourData[args.tour_type as string];
       if (!tour) return JSON.stringify({ error: "Unknown tour type" });
       return JSON.stringify(tour);
     }
@@ -174,10 +167,43 @@ function executeTool(
   }
 }
 
+function buildTools(tourEnum: string[]) {
+  return [
+    {
+      type: "function",
+      function: {
+        name: "get_tour_info",
+        description:
+          "Get details about a specific Nordic walking tour including duration, group size, and location",
+        parameters: {
+          type: "object",
+          properties: {
+            tour_type: {
+              type: "string",
+              enum: tourEnum,
+              description: "The type of tour to look up",
+            },
+          },
+          required: ["tour_type"],
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_current_time",
+        description:
+          "Get the current date and time in Northern Ireland (Europe/London timezone)",
+        parameters: { type: "object", properties: {} },
+      },
+    },
+  ];
+}
+
+// --- Main handler ---
 Deno.serve(async (req) => {
   const cors = getCorsHeaders(req);
 
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: cors });
   }
@@ -189,7 +215,7 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Rate limit by IP
+  // Rate limit
   const clientIp =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     req.headers.get("cf-connecting-ip") ||
@@ -200,11 +226,7 @@ Deno.serve(async (req) => {
       JSON.stringify({ error: "Too many requests. Please wait a moment." }),
       {
         status: 429,
-        headers: {
-          ...cors,
-          "Content-Type": "application/json",
-          "Retry-After": "60",
-        },
+        headers: { ...cors, "Content-Type": "application/json", "Retry-After": "60" },
       }
     );
   }
@@ -216,14 +238,11 @@ Deno.serve(async (req) => {
   if (!baseUrl || !apiKey || !model) {
     return new Response(
       JSON.stringify({ error: "AI provider not configured" }),
-      {
-        status: 500,
-        headers: { ...cors, "Content-Type": "application/json" },
-      }
+      { status: 500, headers: { ...cors, "Content-Type": "application/json" } }
     );
   }
 
-  const requestHeaders = {
+  const aiHeaders = {
     Authorization: `Bearer ${apiKey}`,
     "Content-Type": "application/json",
     "HTTP-Referer": "https://nordicwalk.fit",
@@ -236,29 +255,30 @@ Deno.serve(async (req) => {
     if (!Array.isArray(messages) || messages.length === 0) {
       return new Response(
         JSON.stringify({ error: "messages array is required" }),
-        {
-          status: 400,
-          headers: { ...cors, "Content-Type": "application/json" },
-        }
+        { status: 400, headers: { ...cors, "Content-Type": "application/json" } }
       );
     }
 
-    // Truncate to last 20 messages to control token usage
+    // Load knowledge from DB (cached 5 min)
+    const knowledge = await getKnowledge();
+
     const conversationMessages = [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: knowledge.systemPrompt },
       ...messages.slice(-20),
     ];
 
-    // Tool-call loop: non-streaming rounds to resolve tool calls (max 3 rounds)
+    const tools = buildTools(knowledge.toolEnum);
+
+    // Tool-call loop (max 3 rounds)
     const MAX_TOOL_ROUNDS = 3;
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
       const response = await fetch(`${baseUrl}/chat/completions`, {
         method: "POST",
-        headers: requestHeaders,
+        headers: aiHeaders,
         body: JSON.stringify({
           model,
           messages: conversationMessages,
-          tools: TOOLS,
+          tools,
           stream: false,
           max_tokens: 500,
         }),
@@ -269,10 +289,7 @@ Deno.serve(async (req) => {
         console.error("AI provider error:", response.status, errorText);
         return new Response(
           JSON.stringify({ error: "AI provider returned an error", status: response.status, detail: errorText }),
-          {
-            status: 502,
-            headers: { ...cors, "Content-Type": "application/json" },
-          }
+          { status: 502, headers: { ...cors, "Content-Type": "application/json" } }
         );
       }
 
@@ -282,37 +299,31 @@ Deno.serve(async (req) => {
       if (!choice) {
         return new Response(
           JSON.stringify({ error: "No response from AI provider" }),
-          {
-            status: 502,
-            headers: { ...cors, "Content-Type": "application/json" },
-          }
+          { status: 502, headers: { ...cors, "Content-Type": "application/json" } }
         );
       }
 
-      // If the model wants to call tools, execute them and loop
       if (choice.message?.tool_calls?.length) {
         conversationMessages.push(choice.message);
-
         for (const tc of choice.message.tool_calls) {
           const args = JSON.parse(tc.function.arguments || "{}");
-          const result = executeTool(tc.function.name, args);
+          const result = executeTool(tc.function.name, args, knowledge.tourData);
           conversationMessages.push({
             role: "tool",
             tool_call_id: tc.id,
             content: result,
           });
         }
-        continue; // Next round
+        continue;
       }
 
-      // No tool calls — break out and do the final streaming pass
       break;
     }
 
-    // Final streaming response (same SSE contract as before)
+    // Final streaming response
     const streamResponse = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
-      headers: requestHeaders,
+      headers: aiHeaders,
       body: JSON.stringify({
         model,
         messages: conversationMessages,
@@ -326,14 +337,10 @@ Deno.serve(async (req) => {
       console.error("AI provider error:", streamResponse.status, errorText);
       return new Response(
         JSON.stringify({ error: "AI provider returned an error" }),
-        {
-          status: 502,
-          headers: { ...cors, "Content-Type": "application/json" },
-        }
+        { status: 502, headers: { ...cors, "Content-Type": "application/json" } }
       );
     }
 
-    // Pipe the streaming response back to the client
     return new Response(streamResponse.body, {
       headers: {
         ...cors,
