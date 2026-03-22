@@ -25,19 +25,27 @@ const ChatWidget = () => {
     }
   }, [isOpen]);
 
-  // Lock body scroll when chat is open on mobile
+  // Lock body scroll when chat is open on mobile (iOS requires position:fixed)
   useEffect(() => {
     const isMobile = () => window.innerWidth < 640;
 
     if (isOpen && isMobile()) {
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
       document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
 
-    return () => {
-      document.body.style.overflow = '';
-    };
+      return () => {
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, scrollY);
+      };
+    }
   }, [isOpen]);
 
   const handleSend = () => {
