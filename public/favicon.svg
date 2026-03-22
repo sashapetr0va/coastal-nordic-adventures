@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2d7a9c"/>
+      <stop offset="100%" stop-color="#1a5a6e"/>
+    </linearGradient>
+  </defs>
+  <!-- Rounded background -->
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+  <!-- Walking figure with poles -->
+  <g fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Head -->
+    <circle cx="30" cy="14" r="4.5" fill="#ffffff"/>
+    <!-- Body -->
+    <line x1="30" y1="18.5" x2="30" y2="34"/>
+    <!-- Front leg (stepping forward) -->
+    <polyline points="30,34 36,44 39,54"/>
+    <!-- Back leg -->
+    <polyline points="30,34 24,44 22,54"/>
+    <!-- Front arm + pole -->
+    <line x1="30" y1="24" x2="21" y2="32"/>
+    <line x1="21" y1="32" x2="17" y2="54"/>
+    <!-- Back arm + pole -->
+    <line x1="30" y1="24" x2="39" y2="30"/>
+    <line x1="39" y1="30" x2="46" y2="54"/>
+  </g>
+  <!-- Wave accent -->
+  <path d="M6 52 Q16 48 26 52 Q36 56 46 52 Q52 49 58 52" fill="none" stroke="#88d4e8" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+</svg>
