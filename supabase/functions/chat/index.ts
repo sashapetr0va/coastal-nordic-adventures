@@ -217,8 +217,8 @@ Deno.serve(async (req) => {
 
   // Rate limit
   const clientIp =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     req.headers.get("cf-connecting-ip") ||
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     "unknown";
 
   if (isRateLimited(clientIp)) {
@@ -259,6 +259,14 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Validate and truncate message content
+    const MAX_MESSAGE_LENGTH = 2000;
+    for (const msg of messages) {
+      if (typeof msg.content === "string" && msg.content.length > MAX_MESSAGE_LENGTH) {
+        msg.content = msg.content.slice(0, MAX_MESSAGE_LENGTH);
+      }
+    }
+
     // Load knowledge from DB (cached 5 min)
     const knowledge = await getKnowledge();
 
@@ -288,7 +296,7 @@ Deno.serve(async (req) => {
         const errorText = await response.text();
         console.error("AI provider error:", response.status, errorText);
         return new Response(
-          JSON.stringify({ error: "AI provider returned an error", status: response.status, detail: errorText }),
+          JSON.stringify({ error: "AI provider returned an error" }),
           { status: 502, headers: { ...cors, "Content-Type": "application/json" } }
         );
       }

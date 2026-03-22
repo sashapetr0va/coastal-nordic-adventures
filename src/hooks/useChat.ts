@@ -96,6 +96,7 @@ export function useChat() {
         }
       } catch (err) {
         if ((err as Error).name === "AbortError") return;
+        console.error("Chat error:", err);
 
         // Replace empty assistant message with error
         setMessages((prev) => {
