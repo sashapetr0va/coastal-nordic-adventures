@@ -1,3 +1,9 @@
+.env
+.env.local
+.env.*
+
+# Supabase
+supabase/.temp/
 # Logs
 logs
 *.log

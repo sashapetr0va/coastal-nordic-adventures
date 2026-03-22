@@ -7,6 +7,7 @@ import ToursSection from "@/components/ToursSection";
 import BookingSection from "@/components/BookingSection";
 import ContactSection from "@/components/ContactSection";
 import Footer from "@/components/Footer";
+import ChatWidget from "@/components/ChatWidget";
 
 const Index = () => (
   <>
@@ -19,6 +20,7 @@ const Index = () => (
     <BookingSection />
     <ContactSection />
     <Footer />
+    <ChatWidget />
   </>
 );
 

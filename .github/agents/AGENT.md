@@ -9,13 +9,13 @@ description: "AI guidance for the Nordic Walking Tours Northern Ireland website.
 
 Single-page React landing site for guided Nordic walking tours along the North Coast of Northern Ireland. Instructor: Sasha, based in Coleraine.
 
-**Live site**: https://sashapetr0va.github.io/coastal-nordic-adventures/
+**Live site**: https://nordicwalk.fit
 
 ## Tech Stack
 
 - **React 18 + TypeScript + Vite** (dev server on port 8080)
 - **Tailwind CSS** + **shadcn/ui** (Radix UI components in `src/components/ui/`)
-- **React Router** with `basename="/coastal-nordic-adventures"` for GitHub Pages
+- **React Router** (SPA, serves from `/` on custom domain `nordicwalk.fit`)
 - **Supabase** (PostgreSQL backend, client in `src/integrations/supabase/`)
 - **Tanstack Query** for async data fetching
 - **Sonner** for toast notifications
