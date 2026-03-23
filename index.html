@@ -119,16 +119,18 @@
     }
     </script>
 
-    <!-- Schema: Product/Offer for each tour -->
+    <!-- Schema: Service for each tour -->
     <script type="application/ld+json">
     [
       {
         "@context": "https://schema.org",
-        "@type": "Product",
+        "@type": "Service",
         "name": "Coastal Walking Tour",
         "description": "1.5–2 hour guided Nordic walking tour exploring stunning cliff paths and beaches on Northern Ireland's North Coast. Up to 8 people, includes instruction and photo stops.",
-        "brand": { "@type": "Brand", "name": "Nordic Walking Tours NI" },
-        "category": "Outdoor Fitness & Walking Tours",
+        "provider": { "@id": "https://nordicwalk.fit/#business" },
+        "serviceType": "Guided Walking Tour",
+        "areaServed": { "@type": "Place", "name": "North Coast, Northern Ireland" },
+        "image": "https://nordicwalk.fit/og-image.jpg",
         "offers": {
           "@type": "Offer",
           "priceCurrency": "GBP",
@@ -138,11 +140,13 @@
       },
       {
         "@context": "https://schema.org",
-        "@type": "Product",
+        "@type": "Service",
         "name": "Beach Nordic Walking Session",
         "description": "1 hour fitness-focused Nordic walking session on the sand at Portstewart or Benone Beach. Up to 10 people. Feel the resistance underfoot for a deeper workout.",
-        "brand": { "@type": "Brand", "name": "Nordic Walking Tours NI" },
-        "category": "Outdoor Fitness & Walking Tours",
+        "provider": { "@id": "https://nordicwalk.fit/#business" },
+        "serviceType": "Outdoor Fitness Session",
+        "areaServed": { "@type": "Place", "name": "North Coast, Northern Ireland" },
+        "image": "https://nordicwalk.fit/og-image.jpg",
         "offers": {
           "@type": "Offer",
           "priceCurrency": "GBP",
@@ -152,11 +156,13 @@
       },
       {
         "@context": "https://schema.org",
-        "@type": "Product",
+        "@type": "Service",
         "name": "Beginner Nordic Walking Lesson",
         "description": "45-minute beginner lesson in Portrush area. Learn correct Nordic walking technique, posture, and pole usage. Small groups up to 6 people.",
-        "brand": { "@type": "Brand", "name": "Nordic Walking Tours NI" },
-        "category": "Outdoor Fitness & Walking Tours",
+        "provider": { "@id": "https://nordicwalk.fit/#business" },
+        "serviceType": "Walking Lesson",
+        "areaServed": { "@type": "Place", "name": "North Coast, Northern Ireland" },
+        "image": "https://nordicwalk.fit/og-image.jpg",
         "offers": {
           "@type": "Offer",
           "priceCurrency": "GBP",
@@ -166,11 +172,13 @@
       },
       {
         "@context": "https://schema.org",
-        "@type": "Product",
+        "@type": "Service",
         "name": "Private Nordic Walking Tour",
         "description": "Personalised Nordic walking experience for families, friends, or corporate wellness. Flexible duration, tailored to your pace and goals. Choose your location on the North Coast.",
-        "brand": { "@type": "Brand", "name": "Nordic Walking Tours NI" },
-        "category": "Outdoor Fitness & Walking Tours",
+        "provider": { "@id": "https://nordicwalk.fit/#business" },
+        "serviceType": "Private Guided Tour",
+        "areaServed": { "@type": "Place", "name": "North Coast, Northern Ireland" },
+        "image": "https://nordicwalk.fit/og-image.jpg",
         "offers": {
           "@type": "Offer",
           "priceCurrency": "GBP",
