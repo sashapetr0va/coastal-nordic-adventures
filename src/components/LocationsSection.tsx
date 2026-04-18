@@ -7,22 +7,22 @@ import { useScrollReveal } from "@/hooks/useScrollReveal";
 const locations = [
   {
     name: "Portrush",
-    description: "Rocky coastline with sweeping ocean panoramas and charming harbour views.",
+    description: "Ramore Head, harbour views, and the eastern anchor of the Port Path coastal route.",
     image: portrushImg,
   },
   {
     name: "Portstewart Strand",
-    description: "Two miles of golden sand backed by dunes — a perfect beach walking route.",
+    description: "Two miles of golden sand backed by dunes — the western start of the Port Path walking trail.",
     image: portstewartImg,
   },
   {
     name: "Whiterocks Beach",
-    description: "Dramatic white limestone cliffs and hidden coves along turquoise waters.",
+    description: "Dramatic limestone cliffs on the Causeway Coast Way, with views toward Dunluce Castle.",
     image: whiterocksImg,
   },
   {
     name: "Benone Beach",
-    description: "Vast, peaceful sands with Mussenden Temple perched on the cliffs above.",
+    description: "Seven miles of sand beneath Mussenden Temple, with cliff-top paths at Downhill Demesne above.",
     image: benoneImg,
   },
 ];

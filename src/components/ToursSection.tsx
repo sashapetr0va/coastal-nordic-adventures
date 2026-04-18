@@ -3,12 +3,12 @@ import { useScrollReveal } from "@/hooks/useScrollReveal";
 
 const tours = [
   {
-    title: "Coastal Walking Tour",
+    title: "Port Path Guided Walk",
     duration: "1.5–2 hours",
     group: "Up to 8 people",
-    location: "Various routes",
+    location: "Portstewart ↔ Portrush",
     description:
-      "Explore stunning cliff paths and beaches with guided instruction, photo stops, and nature discovery.",
+      "Walk the iconic Port Path — part of the Causeway Coast Way linking Portstewart Strand to Portrush along cliff tops, grass tracks, and open beach.",
     featured: true,
   },
   {
